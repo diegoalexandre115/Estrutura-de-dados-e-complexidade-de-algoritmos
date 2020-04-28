@@ -39,13 +39,24 @@ def readFile(fileName):
 for r,d,f in os.walk("instancias-num"):
     for file in f:
         array = readFile(os.path.join(r,file).replace("\\\\","\\"))
+        for f in range(0,len(array)):
+            array[f] = int(array[f].replace("\\n",""))
         array2 = array.copy()
+        array3 = array.copy()
         array2.sort()
         array = selectionSort(array)
         assert array2 == array
-        print(file + " selectionsorted") 
-        array = insertionSort(array)
-        assert array2 == array        
-        print(file + " insertionsorted") 
+        print(file + " selectionsorted")
+        f = open(file + " selectionsorted","w+")
+        for n in array:
+            f.write(str(n) + "\n")
+        f.close()  
+        array3 = insertionSort(array3)
+        assert array2 == array3        
+        print(file + " insertionsorted")
+        f = open(file + " insertionsorted","w+")
+        for n in array:
+            f.write(str(n) + "\n")
+        f.close()  
 
 
