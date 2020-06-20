@@ -8,35 +8,35 @@ class Graph():
         self.graph = [[0 for column in range(vertices)]  
                     for row in range(vertices)]
         self.selected = [0] * vertices             
-        self.mst = []
-
+        self.dist = [math.inf] * vertices
     def addEdge(self,i,j,num):
         self.graph[int(i)][int(j)] = int(num)
 
-    def Prim(self):
-        self.selected[0] = 1
-        vertex = 0
-        while(vertex < self.V-1):
-            minimum = math.inf
-            x = 0
-            y = 0
-            for i in range(self.V):
-                if self.selected[i]:
-                    for j in range(self.V):
-                        if ((not self.selected[j]) and self.graph[i][j]):  
-                            if minimum > self.graph[i][j]:
-                                minimum = self.graph[i][j]
-                                x = i
-                                y = j
-            self.mst.append((x,y,self.graph[x][y]))
-            self.selected[y] = True
-            vertex += 1
+    def minDist(self):
+        
+        minimum = math.inf
+        for i in range(self.V):
+            if(not math.isinf(self.dist[i]) and self.dist[i] < minimum
+            and self.selected[i] == 0):
+                minimum = self.dist[i]
+                index = i
 
-        suma = 0
-        for i in self.mst:
-            print(str(i[0]) + "  =======>  " + str(i[1]) + "  weight: " + str(i[2]))
-            suma+= i[2]
-        print("Final Weight: " + str(suma))    
+        return index
+
+    def Djikstra(self):
+        vertex = 0
+        self.dist[0] = 0
+        while(vertex < self.V-1):
+            
+            x = self.minDist()    
+            self.selected[x] = True
+            for i in range(self.V):
+                if(self.graph[x][i] > 0 and self.selected[i] == False and
+                self.dist[i] > self.dist[x] + self.graph[x][i]):
+                   self.dist[i] = self.dist[x] + self.graph[x][i]
+            vertex += 1
+        
+        print("Min distance: " + str(self.dist[self.V-1]))    
 
 def readFile(fileName):
     f= open(fileName,"r+")
@@ -59,10 +59,9 @@ def readFile(fileName):
         j=i+1        
     return g 
 
-
 file = input("Digite o nome do arquivo \n")
 g = readFile(file)
-g.Prim()
+g.Djikstra()
 
 
 """ for r,d,f in os.walk("instancias-num"):

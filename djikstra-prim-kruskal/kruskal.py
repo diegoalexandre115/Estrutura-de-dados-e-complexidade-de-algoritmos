@@ -64,9 +64,8 @@ def readFile(fileName):
     return g 
 
 
-g = readFile("dij10.txt")
-g.Prim()
-#g.Kruskal()
+file = input("Digite o nome do arquivo \n")
+g = readFile(file)
 
 """ for r,d,f in os.walk("instancias-num"):
     for file in f:
