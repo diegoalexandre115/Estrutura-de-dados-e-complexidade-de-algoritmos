@@ -1,4 +1,8 @@
 import math
+import re
+import numpy as np
+import random
+import time
 
 class Graph(): 
   
@@ -7,6 +11,7 @@ class Graph():
         self.graph = [[0 for column in range(vertices)]  
                     for row in range(vertices)]    
         self.iterations = 50
+        self.arrays = 5
         self.name = name
 
     def calcDist(self,path,sel):
@@ -90,7 +95,7 @@ class Graph():
             for i in range(0,len(final_path)-1):
                 for j in range(0,self.V):
                     if(final_path[i] != j and selected[j] == 0 and self.dAux(final_path[i],final_path[i+1],j) < smallest_dist):
-                        smallest_dist = self.dAux(i, i+1, j)
+                        smallest_dist = self.dAux(final_path[i], final_path[i+1], j)
                         next_node = j
                         pos = i+1
             smallest_dist = math.inf
@@ -100,8 +105,8 @@ class Graph():
         return final_path    
 
     def twoOptSwap(self,path,i,j):
-        first_part = path[0:i-1]
-        second_part = path[i-1:j]
+        first_part = path[0:i]
+        second_part = path[i:j]
         second_part.reverse()
         third_part = path[j:]
         return first_part + second_part + third_part
@@ -116,14 +121,15 @@ class Graph():
             smallest_dist_local = math.inf
             for i in range(1,self.V-1):
                 for j in range(i+1,self.V-1):
-                    temp_path = self.twoOptSwap(temp_path,i,j)
+                    temp_path = self.twoOptSwap(path,i,j)
                     temp_dist = self.calcDist(temp_path,0)
                     if(temp_dist < smallest_dist_local):
                         smallest_dist_local = temp_dist
                         local_path = temp_path
-            if(smallest_dist_global < smallest_dist_local):
+            if(smallest_dist_global <= smallest_dist_local):
                 break
             else:
+                #print("two_opt improved from "+ str(smallest_dist_global) + " to " + str(smallest_dist_local)  )
                 smallest_dist_global = smallest_dist_local
                 final_path = local_path
         return final_path                    
@@ -141,6 +147,7 @@ class Graph():
             new_dist = self.calcDist(new_path,0)
             if(old_dist > new_dist):
                 paths[i] = new_path
+                i = 0
             else:
                 i += 1    
         return paths
@@ -153,30 +160,73 @@ class Graph():
             if(solution < best_solution):
                 best_solution = solution
                 best_path = i
-        return best_solution,best_path        
+        return best_solution,best_path
+
+    def reinsertion(self,path):
+        #random.seed(time.time())
+        random_number = random.randint(1,int((self.V)/2))
+        random_number_end = random.randint(int((self.V)/2),self.V-1)
+        first_part = path[0:random_number]
+        second_part = path[random_number:random_number_end]
+        third_part= path[random_number_end:]
+        random.shuffle(second_part)
+        return first_part + second_part +third_part
+    def reinsertion_try3(self,path):
+        random_int = random.randint(0,1)
+        if(random_int == 0):
+            random_number = random.randint(1,int((self.V)/2))
+            first_part = [0]
+            second_part = path[1:random_number]
+            third_part = path[random_number:]
+        else:
+            random_number = random.randint(int((self.V)/2),self.V-1)
+            first_part = path[0:random_number]
+            second_part = path[random_number:self.V-1]
+            third_part = path[self.V-1:]
+        random.shuffle(second_part)
+        return first_part + second_part +third_part    
     def multiStart(self):
         paths = []
-        paths.append(self.shortestInsertion().insert(0,0))
-        paths.append(self.farthestInsertion().insert(0,0))
+        paths.append(self.shortestInsertion())
+        paths.append(self.farthestInsertion())
+        for i in range(len(paths)):
+            paths[i].insert(0,0)
         paths.append(self.cheapestInsertion())
+        random.seed(time.time())
+        chosen = []
+        """ for i in range(self.arrays):
+            chosen = paths[random.randint(0,2)].copy()
+            chosen = [x  for x in chosen if x != 0]
+            random.shuffle(chosen)
+            chosen.append(0)
+            chosen.insert(0,0)
+            paths.append(chosen) """
+        #for i in range(3):
+        #    paths.pop(0)    
         best_solution,best_path = self.calcMultiDists(paths)
         count = 0
         local_solution = math.inf
         local_path = []
         while(count < self.iterations):
+            for i in range(len(paths)):
+                paths[i] = self.reinsertion_try3(paths[i])
             paths = self.vnd(paths)
             local_solution,local_path = self.calcMultiDists(paths)
             if(local_solution < best_solution):
                 count = 0
                 best_path = local_path
-                best_solution = best_path
+                best_solution = local_solution
+                print("Solution improved")
             else:
-                count += 1                     
+                count += 1
+                print("Solution did not improve for "+ str(count) + " iterations" )                     
         return best_solution,best_path
 def readFile(fileName):
     f= open(fileName,"r+")
-    name = f.readline().replace("\n","").replace("\w+\:\s+","")
-    vertices = f.readline().replace("\n","").replace("\w+\:\s+","")
+    name = f.readline().replace("\n","")
+    name = re.sub("\w+\:\s+","",name)
+    vertices = f.readline().replace("\n","")
+    vertices = re.sub("\w+\:\s+","",vertices)
     g = Graph(int(vertices),name)
     nothing = f.readline()
     i=0
@@ -184,11 +234,12 @@ def readFile(fileName):
     for line in f.readlines():
         line = line.replace("\n","")
         line = line.replace("\t"," ")
+        #line = re.sub("\s+"," ",line)
         nums = line.split(' ')
         if(nums[len(nums)-1] == ''):
             nums.pop()
         for num in nums:
-            if(num != ' '):
+            if(num != ' ' and num != ''):
                 g.graph[i][j]= int(num)            
                 j+=1
         i+=1
@@ -204,11 +255,22 @@ def readFile(fileName):
 
 #file = input("Digite o nome do arquivo \n")
 file = "bayg29.txt"
+# file = "bays29.txt"
+#file = "berlin52.txt"
+#file = "bier127.txt"
+# file = "brazil58.txt"
+# file = "ch130.txt"
+# file = "ch150.txt"
+# file = "swiss42.txt"
 g = readFile(file)
-print(g.V)
+solution,path = g.multiStart()
 print(g.name)
+
+print(path)
+print(solution)
 #z = g.cheapestInsertion()
 #v = [x + 1 if(x != 0) else x for x in z]
 #v = [x + 1 for x in z]
 #print(v)
 #print(g.calcDist(z,0))
+ 
